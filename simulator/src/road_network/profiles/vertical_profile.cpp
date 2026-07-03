@@ -2,47 +2,93 @@
 
 #include <stdexcept>
 #include <cmath>
+#include <variant>
 
 namespace simulator
 {
-    VerticalProfile::VerticalProfile(VerticalProfileType type,
-                                     double length,
-                                     double linear_angle)
-        : type_(type),
-          length_(length),
-          linear_angle_(linear_angle)
+    // Linear constructor
+    VerticalProfile VerticalProfile::Linear(double horizontal_length,
+                                            double grade)
     {
-        if (length <= 0)
+        if (horizontal_length <= 0.0)
         {
-            throw std::invalid_argument("length must be positive");
+            throw std::invalid_argument("horizontal_length must be positive");
         }
+
+        double length = computeLinearLength(horizontal_length, grade);
+
+        return VerticalProfile(
+            horizontal_length,
+            length,
+            LinearData{
+                .grade = grade,
+                .direction = {
+                    horizontal_length / length,
+                    horizontal_length * grade / length}});
     }
 
-    double VerticalProfile::getLength() const
+    // Parabolic constructor
+    VerticalProfile VerticalProfile::Parabolic(double horizontal_length,
+                                               double param1,
+                                               double param2)
+    {
+        if (horizontal_length <= 0.0)
+        {
+            throw std::invalid_argument("horizontal_length must be positive");
+        }
+
+        double length = computeParabolicLength(horizontal_length, param1, param2);
+
+        return VerticalProfile(
+            horizontal_length,
+            length,
+            ParabolicData{
+                .param1 = param1,
+                .param2 = param2});
+    }
+
+    double VerticalProfile::horizontalLength() const
+    {
+        return horizontal_length_;
+    }
+
+    double VerticalProfile::length() const
     {
         return length_;
     }
 
     VerticalProfilePose VerticalProfile::evaluate(double s) const
     {
-        switch (type_)
-        {
-        case VerticalProfileType::Flat:
-            return evaluateFlat();
-        case VerticalProfileType::Linear:
-            return evaluateLinear(s);
-        }
-
-        throw std::logic_error("Failed to match profile type");
+        return std::visit(
+            [s](const auto &profile)
+            {
+                return profile.evaluate(s);
+            },
+            data_);
     }
 
-    VerticalProfilePose VerticalProfile::evaluateFlat() const
+    // Private helpers
+
+    double VerticalProfile::computeLinearLength(double horizontal_length, double grade)
     {
-        return VerticalProfilePose{0.0, 0.0};
+        return horizontal_length * std::sqrt(grade * grade + 1);
     }
 
-    VerticalProfilePose VerticalProfile::evaluateLinear(double s) const
+    double VerticalProfile::computeParabolicLength(double horizontal_length, double param1, double param2)
     {
-        return VerticalProfilePose{s * sin(linear_angle_), linear_angle_};
+        throw std::logic_error("not implemented yet");
+    }
+
+    VerticalProfilePose VerticalProfile::LinearData::evaluate(double s) const
+    {
+        return VerticalProfilePose{
+            .z = s * this->direction.y,
+            .horizontal_distance = s * this->direction.x,
+            .gradient = this->grade};
+    }
+
+    VerticalProfilePose VerticalProfile::ParabolicData::evaluate(double s) const
+    {
+        throw std::logic_error("not implemented yet");
     }
 }

@@ -11,7 +11,7 @@ namespace simulator
           vertical_(vertical),
           origin_(origin)
     {
-        if (horizontal_.getLength() != vertical_.getLength())
+        if (horizontal_.length() != vertical_.horizontalLength())
         {
             throw std::invalid_argument("Profile length mismatch");
         }
@@ -19,8 +19,7 @@ namespace simulator
 
     double RoadSegment::getLength() const
     {
-        // length guaranteed to match for both horizontal and vertical
-        return horizontal_.getLength();
+        return vertical_.length();
     }
 
     Vector3 RoadSegment::getOrigin() const
@@ -35,13 +34,13 @@ namespace simulator
             throw std::out_of_range("s out of bounds");
         }
 
-        auto horizontalPose = horizontal_.evaluate(s);
         auto verticalPose = vertical_.evaluate(s);
+        auto horizontalPose = horizontal_.evaluate(verticalPose.horizontal_distance);
 
         // TODO: Add orientation data to pose (as quaternion?)
         return RoadPose{
-            origin_ + Vector3{horizontalPose.x,
-                              horizontalPose.y,
+            origin_ + Vector3{horizontalPose.xy.x,
+                              horizontalPose.xy.y,
                               verticalPose.z}};
     }
 }

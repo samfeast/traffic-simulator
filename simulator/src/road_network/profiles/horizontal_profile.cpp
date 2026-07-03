@@ -4,43 +4,58 @@
 
 namespace simulator
 {
-    HorizontalProfile::HorizontalProfile(HorizontalProfileType type,
-                                         double length)
-        : type_(type),
-          length_(length)
+    HorizontalProfile HorizontalProfile::Straight(double length)
     {
-        if (length <= 0)
+        if (length <= 0.0)
         {
             throw std::invalid_argument("length must be positive");
         }
+
+        return HorizontalProfile(
+            length,
+            StraightData{});
     }
 
-    double HorizontalProfile::getLength() const
+    HorizontalProfile HorizontalProfile::Arc(double length,
+                                             double param1,
+                                             double param2)
+    {
+        if (length <= 0.0)
+        {
+            throw std::invalid_argument("length must be positive");
+        }
+
+        return HorizontalProfile(
+            length,
+            ArcData{
+                .param1 = param1,
+                .param2 = param2});
+    }
+
+    double HorizontalProfile::length() const
     {
         return length_;
     }
 
     HorizontalProfilePose HorizontalProfile::evaluate(double s) const
     {
-        switch (type_)
-        {
-        case HorizontalProfileType::Straight:
-            return evaluateStraight(s);
-        case HorizontalProfileType::Arc:
-            return evaluateArc(s);
-        }
-
-        throw std::logic_error("Failed to match profile type");
+        return std::visit(
+            [s](const auto &profile)
+            {
+                return profile.evaluate(s);
+            },
+            data_);
     }
 
-    HorizontalProfilePose HorizontalProfile::evaluateStraight(double s) const
+    HorizontalProfilePose HorizontalProfile::StraightData::evaluate(double s) const
     {
-        return HorizontalProfilePose{s, 0.0, 0.0};
+        return HorizontalProfilePose{
+            .xy = Vector2(s, 0.0),
+            .tangent = Vector2(1.0, 0.0)};
     }
 
-    HorizontalProfilePose HorizontalProfile::evaluateArc(double s) const
+    HorizontalProfilePose HorizontalProfile::ArcData::evaluate(double s) const
     {
-        // TODO
-        return HorizontalProfilePose{0.0, 0.0, 0.0};
+        throw std::logic_error("not implemented yet");
     }
 }

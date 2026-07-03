@@ -7,17 +7,13 @@
 
 int main()
 {
-    simulator::HorizontalProfile h{
-        simulator::HorizontalProfileType::Straight,
-        100.0};
-
-    simulator::VerticalProfile v{
-        simulator::VerticalProfileType::Flat,
-        100.0};
+    auto horizontal_length = 100.0;
+    auto h = simulator::HorizontalProfile::Straight(horizontal_length);
+    auto v = simulator::VerticalProfile::Linear(horizontal_length, -0.1);
 
     simulator::Vector3 origin{
-        50.0,
-        10.0,
+        0.0,
+        0.0,
         0.0};
 
     simulator::RoadSegment segment(h, v, origin);

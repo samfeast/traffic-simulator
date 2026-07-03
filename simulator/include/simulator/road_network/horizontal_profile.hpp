@@ -1,35 +1,50 @@
 #pragma once
 
+#include "simulator/road_network/vector2.hpp"
+
+#include <variant>
+
 namespace simulator
 {
     struct HorizontalProfilePose
     {
-        double x;
-        double y;
-        double theta; // radians
-    };
-
-    enum class HorizontalProfileType : int
-    {
-        Straight = 0,
-        Arc = 1
+        Vector2 xy;
+        Vector2 tangent; // radians
     };
 
     class HorizontalProfile
     {
     public:
-        HorizontalProfile(HorizontalProfileType type,
-                          double length);
+        static HorizontalProfile Straight(double length);
+        static HorizontalProfile Arc(double length, double param1, double param2);
+
+        double length() const;
 
         HorizontalProfilePose evaluate(double s) const;
 
-        double getLength() const;
+        // Add getProfileShape() to get all underlying shape parameters?
+        // OR just compute pose at fixed steps with evaluate() to form polyline
 
     private:
-        HorizontalProfileType type_;
-        double length_;
+        struct StraightData
+        {
+            HorizontalProfilePose evaluate(double s) const;
+        };
 
-        HorizontalProfilePose evaluateStraight(double s) const;
-        HorizontalProfilePose evaluateArc(double s) const;
+        struct ArcData
+        {
+            double param1;
+            double param2;
+
+            HorizontalProfilePose evaluate(double s) const;
+        };
+
+        HorizontalProfile(double length,
+                          std::variant<StraightData, ArcData> data)
+            : length_(length),
+              data_(std::move(data)) {}
+
+        double length_;
+        std::variant<StraightData, ArcData> data_;
     };
 }
