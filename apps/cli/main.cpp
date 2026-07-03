@@ -9,7 +9,7 @@ int main()
 {
     auto horizontal_length = 100.0;
     auto h = simulator::HorizontalProfile::Straight(horizontal_length);
-    auto v = simulator::VerticalProfile::Linear(horizontal_length, -0.1);
+    auto v = simulator::VerticalProfile::Parabolic(horizontal_length, -50.0, -1.0);
 
     simulator::Vector3 origin{
         0.0,
@@ -18,7 +18,7 @@ int main()
 
     simulator::RoadSegment segment(h, v, origin);
 
-    auto s = 10.0;
+    auto s = 100.0;
 
     auto pose = segment.evaluate(s);
 

@@ -4,6 +4,7 @@
 
 namespace simulator
 {
+    // Straight constructor
     HorizontalProfile HorizontalProfile::Straight(double length)
     {
         if (length <= 0.0)
@@ -16,6 +17,7 @@ namespace simulator
             StraightData{});
     }
 
+    // Arc constructor
     HorizontalProfile HorizontalProfile::Arc(double length,
                                              double param1,
                                              double param2)
@@ -46,6 +48,8 @@ namespace simulator
             },
             data_);
     }
+
+    // Private helpers
 
     HorizontalProfilePose HorizontalProfile::StraightData::evaluate(double s) const
     {

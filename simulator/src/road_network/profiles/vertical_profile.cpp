@@ -8,43 +8,44 @@ namespace simulator
 {
     // Linear constructor
     VerticalProfile VerticalProfile::Linear(double horizontal_length,
-                                            double grade)
+                                            double elevation)
     {
         if (horizontal_length <= 0.0)
         {
             throw std::invalid_argument("horizontal_length must be positive");
         }
 
-        double length = computeLinearLength(horizontal_length, grade);
+        double length = computeLinearLength(horizontal_length, elevation);
 
         return VerticalProfile(
             horizontal_length,
+            elevation,
             length,
-            LinearData{
-                .grade = grade,
-                .direction = {
-                    horizontal_length / length,
-                    horizontal_length * grade / length}});
+            LinearData{});
     }
 
     // Parabolic constructor
     VerticalProfile VerticalProfile::Parabolic(double horizontal_length,
-                                               double param1,
-                                               double param2)
+                                               double elevation,
+                                               double initial_gradient)
     {
         if (horizontal_length <= 0.0)
         {
             throw std::invalid_argument("horizontal_length must be positive");
         }
 
-        double length = computeParabolicLength(horizontal_length, param1, param2);
+        auto a = (elevation - initial_gradient * horizontal_length) / (horizontal_length * horizontal_length);
+        auto b = initial_gradient;
+
+        double length = computeParabolicLength(horizontal_length, elevation, a, b);
 
         return VerticalProfile(
             horizontal_length,
+            elevation,
             length,
             ParabolicData{
-                .param1 = param1,
-                .param2 = param2});
+                .a = a,
+                .b = b});
     }
 
     double VerticalProfile::horizontalLength() const
@@ -60,34 +61,44 @@ namespace simulator
     VerticalProfilePose VerticalProfile::evaluate(double s) const
     {
         return std::visit(
-            [s](const auto &profile)
+            [this, s](const auto &profile)
             {
-                return profile.evaluate(s);
+                return profile.evaluate(horizontal_length_,
+                                        elevation_,
+                                        length_,
+                                        s);
             },
             data_);
     }
 
     // Private helpers
 
-    double VerticalProfile::computeLinearLength(double horizontal_length, double grade)
+    double VerticalProfile::computeLinearLength(double horizontal_length, double elevation)
     {
-        return horizontal_length * std::sqrt(grade * grade + 1);
+        return std::sqrt(horizontal_length * horizontal_length + elevation * elevation);
     }
 
-    double VerticalProfile::computeParabolicLength(double horizontal_length, double param1, double param2)
+    double VerticalProfile::computeParabolicLength(double horizontal_length, double elevation, double a, double b)
     {
         throw std::logic_error("not implemented yet");
     }
 
-    VerticalProfilePose VerticalProfile::LinearData::evaluate(double s) const
+    VerticalProfilePose VerticalProfile::LinearData::evaluate(double horizontal_length,
+                                                              double elevation,
+                                                              double length,
+                                                              double s) const
     {
+        auto t = s / length;
         return VerticalProfilePose{
-            .z = s * this->direction.y,
-            .horizontal_distance = s * this->direction.x,
-            .gradient = this->grade};
+            .z = t * elevation,
+            .horizontal_distance = t * horizontal_length,
+            .gradient = elevation / horizontal_length};
     }
 
-    VerticalProfilePose VerticalProfile::ParabolicData::evaluate(double s) const
+    VerticalProfilePose VerticalProfile::ParabolicData::evaluate(double horizontal_length,
+                                                                 double elevation,
+                                                                 double length,
+                                                                 double s) const
     {
         throw std::logic_error("not implemented yet");
     }

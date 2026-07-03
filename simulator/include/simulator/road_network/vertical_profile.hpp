@@ -17,13 +17,14 @@ namespace simulator
     {
     public:
         static VerticalProfile Linear(double horizontal_length,
-                                      double grade);
+                                      double elevation);
 
         static VerticalProfile Parabolic(double horizontal_length,
-                                         double param1,
-                                         double param2);
+                                         double elevation,
+                                         double initial_gradient);
 
         double horizontalLength() const;
+        double elevation() const;
         double length() const;
 
         VerticalProfilePose evaluate(double s) const; // s is distance along road centreline
@@ -34,34 +35,42 @@ namespace simulator
     private:
         struct LinearData
         {
-            double grade;
-            // computed and cached
-            Vector2 direction;
-
-            VerticalProfilePose evaluate(double s) const;
+            VerticalProfilePose evaluate(double horizontal_length,
+                                         double elevation,
+                                         double length,
+                                         double s) const;
         };
 
         struct ParabolicData
         {
-            // placeholders
-            double param1;
-            double param2;
+            double a;
+            double b; // b = initial gradient
 
-            VerticalProfilePose evaluate(double s) const;
+            VerticalProfilePose evaluate(double horizontal_length,
+                                         double elevation,
+                                         double length,
+                                         double s) const;
         };
 
         VerticalProfile(double horizontal_length,
+                        double elevation,
                         double length,
                         std::variant<LinearData, ParabolicData> data)
             : horizontal_length_(horizontal_length),
+              elevation_(elevation),
               length_(length),
               data_(std::move(data)) {}
 
         double horizontal_length_;
+        double elevation_;
         double length_;
         std::variant<LinearData, ParabolicData> data_;
 
-        static double computeLinearLength(double horizontal_length, double grade);
-        static double computeParabolicLength(double horizontal_length, double param1, double param2);
+        static double computeLinearLength(double horizontal_length,
+                                          double elevation);
+        static double computeParabolicLength(double horizontal_length,
+                                             double elevation,
+                                             double a,
+                                             double b);
     };
 }
