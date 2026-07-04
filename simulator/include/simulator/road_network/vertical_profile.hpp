@@ -54,7 +54,7 @@ class VerticalProfile
     double length_;
     std::variant<LinearData, ParabolicData> data_;
 
-    static double computeLinearLength(double horizontal_length, double elevation);
-    static double computeParabolicLength(double horizontal_length, double elevation, double a, double b);
+    static double computeLinearLength(double x, double y);
+    static double computeParabolicLength(double x, double y, double a, double b);
 };
 }  // namespace simulator

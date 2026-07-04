@@ -35,8 +35,9 @@ VerticalProfile VerticalProfile::Parabolic(double horizontal_length, double elev
     return VerticalProfile(horizontal_length, elevation, length, ParabolicData{.a = a, .b = b});
 }
 
+// Getters
 double VerticalProfile::horizontalLength() const { return horizontal_length_; }
-
+double VerticalProfile::elevation() const { return elevation_; }
 double VerticalProfile::length() const { return length_; }
 
 VerticalProfilePose VerticalProfile::evaluate(double s) const
@@ -47,14 +48,26 @@ VerticalProfilePose VerticalProfile::evaluate(double s) const
 
 // Private helpers
 
-double VerticalProfile::computeLinearLength(double horizontal_length, double elevation)
-{
-    return std::sqrt(horizontal_length * horizontal_length + elevation * elevation);
-}
+double VerticalProfile::computeLinearLength(double x, double y) { return std::sqrt(x * x + y * y); }
 
-double VerticalProfile::computeParabolicLength(double horizontal_length, double elevation, double a, double b)
+double VerticalProfile::computeParabolicLength(double x, double y, double a, double b)
 {
-    throw std::logic_error("not implemented yet");
+    if (std::abs(2.0 * a * x) < 1e-6)
+    {
+        // Fallback to linear for very shallow parabolas
+        return computeLinearLength(x, y);
+    }
+
+    // NOTE: RISK HERE!
+    const double u_end = 2.0 * a * x + b;
+    const double u_start = b;
+
+    const double sqrt_u_end = std::sqrt(1.0 + u_end * u_end);
+    const double sqrt_u_start = std::sqrt(1.0 + u_start * u_start);
+
+    const auto F = [](double u, double s) { return u * s + std::log(u + s); };
+
+    return 0.25 / a * (F(u_end, sqrt_u_end) - F(u_start, sqrt_u_start));
 }
 
 VerticalProfilePose VerticalProfile::LinearData::evaluate(double horizontal_length, double elevation, double length,
