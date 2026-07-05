@@ -1,6 +1,7 @@
 #include "simulator/road_network/vertical_profile.hpp"
 
 #include <cmath>
+#include <iostream>
 #include <stdexcept>
 #include <variant>
 
@@ -40,6 +41,7 @@ double VerticalProfile::horizontalLength() const { return horizontal_length_; }
 double VerticalProfile::elevation() const { return elevation_; }
 double VerticalProfile::length() const { return length_; }
 
+// Public evaluation dispatcher
 VerticalProfilePose VerticalProfile::evaluate(double s) const
 {
     return std::visit(
@@ -81,6 +83,51 @@ VerticalProfilePose VerticalProfile::LinearData::evaluate(double horizontal_leng
 VerticalProfilePose VerticalProfile::ParabolicData::evaluate(double horizontal_length, double elevation, double length,
                                                              double s) const
 {
-    throw std::logic_error("not implemented yet");
+    auto tolerance = 1e-8;
+
+    auto s_n = s;
+    // Fallback to linear for very small 2 * a * s
+    auto fallback_elevation = elevation * s / length;
+
+    double arc_length;
+    double residual;
+    double step;
+    double slope;
+    double denom;
+
+    for (int i = 0; i < 10; i++)
+    {
+        arc_length = computeParabolicLength(s_n, fallback_elevation, a, b);
+
+        residual = arc_length - s;
+
+        if (std::abs(residual) < tolerance)
+        {
+            break;
+        }
+
+        slope = 2.0 * a * s_n + b;
+        denom = std::sqrt(1.0 + slope * slope);
+
+        // Avoid division issues
+        if (denom < 1e-12)
+        {
+            break;
+        }
+
+        step = residual / denom;
+        s_n -= step;
+
+        // Also converge if step is less than tolerance
+        if (std::abs(step) < tolerance)
+        {
+            break;
+        }
+    }
+
+    auto z = a * s_n * s_n + b * s_n;
+    auto gradient = 2 * a * s_n + b;
+
+    return VerticalProfilePose{.z = z, .horizontal_distance = s_n, .gradient = gradient};
 }
 }  // namespace simulator
